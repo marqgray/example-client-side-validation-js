@@ -1,8 +1,19 @@
+const formInputLengthRanges = {
+  username: {
+    minimum: 3,
+    maximum: 15,
+  },
+  password: {
+    minimum: 6,
+    maximum: 25,
+  },
+};
+
 const formInputErrorResponses = {
-  username: "A username is required!",
-  email: "A valid email address is required!",
-  password: "A password is required!",
-  passwordConfirmation: "A matching password is required!",
+  blank: "This field cannot be blank!",
+  usernameLength: `The username must be between ${formInputLengthRanges.username.minimum} to ${formInputLengthRanges.username.maximum} characters!`,
+  passwordLength: `The password must be between ${formInputLengthRanges.password.minimum} to ${formInputLengthRanges.password.maximum} characters!`,
+  passwordMatch: "You must confirm a matching password!",
 };
 
 // Required IDs
@@ -45,37 +56,81 @@ const isValidEmail = (email) => {
   return regex.test(String(email).toLowerCase());
 };
 
+const isFieldGreaterThanMinimumLength = (htmlInputObject, minimumNumber) => {
+  const value = htmlInputObject.value;
+  return value.length >= minimumNumber;
+};
+
+const isFieldLessThanMaximumLength = (htmlInputObject, maximumNumber) => {
+  const value = htmlInputObject.value;
+  return value.length <= maximumNumber;
+};
+
+const isFieldWithinRangeOfLength = (
+    htmlInputObject,
+    minimumNumber,
+    maximumNumber
+) => {
+  return (
+      isFieldGreaterThanMinimumLength(htmlInputObject, minimumNumber) &&
+      isFieldLessThanMaximumLength(htmlInputObject, maximumNumber)
+  );
+};
+
+// Check required fields
+const isRegistrationFieldInputValid = (...htmlInputObjects) => {
+  for (const htmlInputObject of htmlInputObjects) {
+    if (isStringValueEmpty(htmlInputObject.value)) {
+      showError(htmlInputObject, formInputErrorResponses.blank);
+      continue;
+    }
+    switch (htmlInputObject) {
+      case htmlUsernameInput:
+        if (
+            !isFieldWithinRangeOfLength(
+                htmlInputObject,
+                formInputLengthRanges.username.minimum,
+                formInputLengthRanges.username.maximum
+            )
+        ) {
+          showError(htmlInputObject, formInputErrorResponses.usernameLength);
+          continue;
+        }
+        break;
+      case htmlEmailInput:
+        break;
+      case htmlPasswordInput:
+        if (
+            !isFieldWithinRangeOfLength(
+                htmlInputObject,
+                formInputLengthRanges.password.minimum,
+                formInputLengthRanges.password.maximum
+            )
+        ) {
+          showError(htmlInputObject, formInputErrorResponses.passwordLength);
+          continue;
+        }
+        break;
+      case htmlPasswordConfirmationInput:
+        if (htmlPasswordInput.value !== htmlInputObject.value) {
+          showError(htmlInputObject, formInputErrorResponses.passwordMatch);
+          continue;
+        }
+        break;
+      default:
+        break;
+    }
+    showSuccess(htmlInputObject);
+  }
+};
+
 // Event listeners
 htmlForm.addEventListener("submit", (e) => {
   e.preventDefault(); // Prevents the default trigger of the submit button
-  const usernameValue = htmlUsernameInput.value;
-  const emailValue = htmlEmailInput.value;
-  const passwordValue = htmlPasswordInput.value;
-  const passwordConfirmationValue = htmlPasswordConfirmationInput.value;
-
-  if (isStringValueEmpty(usernameValue)) {
-    showError(htmlUsernameInput, formInputErrorResponses.username);
-  } else {
-    showSuccess(htmlUsernameInput);
-  }
-  if (isStringValueEmpty(emailValue)) {
-    showError(htmlEmailInput, formInputErrorResponses.email);
-  } else if (!isValidEmail(emailValue)) {
-    showError(htmlEmailInput, formInputErrorResponses.email);
-  } else {
-    showSuccess(htmlEmailInput);
-  }
-  if (isStringValueEmpty(passwordValue)) {
-    showError(htmlPasswordInput, formInputErrorResponses.password);
-  } else {
-    showSuccess(htmlPasswordInput);
-  }
-  if (isStringValueEmpty(passwordConfirmationValue)) {
-    showError(
-        htmlPasswordConfirmationInput,
-        formInputErrorResponses.passwordConfirmation
-    );
-  } else {
-    showSuccess(htmlPasswordConfirmationInput);
-  }
+  isRegistrationFieldInputValid(
+      htmlUsernameInput,
+      htmlEmailInput,
+      htmlPasswordInput,
+      htmlPasswordConfirmationInput
+  );
 });
